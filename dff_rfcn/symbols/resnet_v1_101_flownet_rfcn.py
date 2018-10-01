@@ -473,7 +473,7 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         scale5c_branch2c = bn5c_branch2c
         res5c = mx.symbol.broadcast_add(name='res5c', *[res5b_relu,scale5c_branch2c] )
         res5c_relu = mx.symbol.Activation(name='res5c_relu', data=res5c , act_type='relu')
-        return feat_conv_3x3_relu
+        return res5c_relu
 
 
     def CAM(self, input_layer,num_classes):

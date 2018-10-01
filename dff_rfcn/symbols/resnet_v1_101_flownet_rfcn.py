@@ -473,11 +473,27 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         scale5c_branch2c = bn5c_branch2c
         res5c = mx.symbol.broadcast_add(name='res5c', *[res5b_relu,scale5c_branch2c] )
         res5c_relu = mx.symbol.Activation(name='res5c_relu', data=res5c , act_type='relu')
-
-        feat_conv_3x3 = mx.sym.Convolution(
-            data=res5c_relu, kernel=(3, 3), pad=(6, 6), dilate=(6, 6), num_filter=1024, name="feat_conv_3x3")
-        feat_conv_3x3_relu = mx.sym.Activation(data=feat_conv_3x3, act_type="relu", name="feat_conv_3x3_relu")
         return feat_conv_3x3_relu
+
+
+    def CAM(self, input_layer,num_classes):
+
+        cam_conv_3x3 = mx.sym.Convolution(
+            data=input_layer, kernel=(3, 3), pad=(1, 1), stride=(1,1), num_filter=1024, name="cam_conv_3x3")
+        cam_conv_3x3_relu = mx.sym.Activation(data=cam_conv_3x3, act_type="relu", name="cam_conv_3x3_relu")
+        cam_pooling = mx.sym.Pooling(name='cam_ave_pooling', data=cam_conv_3x3_relu, pool_type='avg', global_pool=True)
+        cam_fully_connected = mx.sym.FullyConnected(data=cam_pooling, name='cam_fc', num_hidden=num_classes)
+        cam_softmax = mx.sym.SoftmaxOutput(data=cam_fully_connected, name='cam_softmax')
+
+        return cam_softmax
+
+    def resnet101_cam(self, data, num_classes):
+
+        resnet_features = self.get_resnet_v1(data)
+        return self.CAM(resnet_features,num_classes)
+
+        
+
 
     def get_flownet(self, img_cur, img_ref):
         data = mx.symbol.Concat(img_cur / 255.0, img_ref / 255.0, dim=1)
@@ -556,6 +572,10 @@ class resnet_v1_101_flownet_rfcn(Symbol):
 
         # shared convolutional layers
         conv_feat = self.get_resnet_v1(data_ref)
+
+        #computes CAM 
+        cam_restnet = self.resnet101_cam(data_ref,101)
+
         flow, scale_map = self.get_flownet(data, data_ref)
         flow_grid = mx.sym.GridGenerator(data=flow, transform_type='warp', name='flow_grid')
         warp_conv_feat = mx.sym.BilinearSampler(data=conv_feat, grid=flow_grid, name='warping_feat')

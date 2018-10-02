@@ -478,13 +478,17 @@ class resnet_v1_101_flownet_rfcn(Symbol):
 
     def CAM(self, input_layer,num_classes):
 
+
+        cam_conv_3x3_bias = mx.sym.Variable(name='cam_conv_3x3_bias', lr_mult=0.0)
         cam_conv_3x3 = mx.sym.Convolution(
-            data=input_layer, kernel=(3, 3), pad=(1, 1), stride=(1,1), num_filter=1024, name="cam_conv_3x3")
+            data=input_layer, kernel=(3, 3), bias= cam_conv_3x3_bias,pad=(1, 1), 
+            stride=(1,1), num_filter=1024, name="cam_conv_3x3")
         cam_conv_3x3_relu = mx.sym.Activation(data=cam_conv_3x3, act_type="relu", name="cam_conv_3x3_relu")
         cam_pooling = mx.sym.Pooling(name='cam_ave_pooling', data=cam_conv_3x3_relu, pool_type='avg', global_pool=True)
-        cam_fully_connected = mx.sym.FullyConnected(data=cam_pooling, name='cam_fc', num_hidden=num_classes)
+        cam_fully_connected_bias = mx.sym.Variable(name='cam_fully_connected_bias', lr_mult=0.0)
+        cam_fc_weights = mx.symbol.Variable('cam_fc_weights',init=mx.init.Xavier())
+        cam_fully_connected = mx.sym.FullyConnected(data=cam_pooling, name='cam_fc', num_hidden=num_classes,bias=cam_fully_connected_bias,weight=cam_fc_weights)
         cam_softmax = mx.sym.SoftmaxOutput(data=cam_fully_connected, name='cam_softmax')
-
         return cam_softmax
 
     def resnet101_cam(self, data, num_classes):
@@ -557,7 +561,7 @@ class resnet_v1_101_flownet_rfcn(Symbol):
     def get_train_symbol(self, cfg):
 
         # config alias for convenient
-        num_classes = cfg.dataset.NUM_CLASSES
+        num_classes = cfg.dataset.NUM_CLASSES # need to change to UCF 101 
         num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
         num_anchors = cfg.network.NUM_ANCHORS
 
@@ -574,8 +578,8 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         conv_feat = self.get_resnet_v1(data_ref)
 
         #computes CAM 
-        cam_restnet = self.resnet101_cam(data_ref,101)
-
+        cam_resnet = self.resnet101_cam(data_ref,num_classes)
+        """
         flow, scale_map = self.get_flownet(data, data_ref)
         flow_grid = mx.sym.GridGenerator(data=flow, transform_type='warp', name='flow_grid')
         warp_conv_feat = mx.sym.BilinearSampler(data=conv_feat, grid=flow_grid, name='warping_feat')
@@ -673,8 +677,10 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         rcnn_label = mx.sym.Reshape(data=rcnn_label, shape=(cfg.TRAIN.BATCH_IMAGES, -1), name='label_reshape')
         cls_prob = mx.sym.Reshape(data=cls_prob, shape=(cfg.TRAIN.BATCH_IMAGES, -1, num_classes), name='cls_prob_reshape')
         bbox_loss = mx.sym.Reshape(data=bbox_loss, shape=(cfg.TRAIN.BATCH_IMAGES, -1, 4 * num_reg_classes), name='bbox_loss_reshape')
-
+        
         group = mx.sym.Group([rpn_cls_prob, rpn_bbox_loss, cls_prob, bbox_loss, mx.sym.BlockGrad(rcnn_label)])
+        """
+        group = mx.sym.Group([cam_resnet])
         self.sym = group
         return group
 
@@ -917,9 +923,15 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         arg_params['Convolution5_scale_weight'] = mx.nd.zeros(shape=self.arg_shape_dict['Convolution5_scale_weight'])
         arg_params['Convolution5_scale_bias'] = mx.nd.ones(shape=self.arg_shape_dict['Convolution5_scale_bias'])
 
-        arg_params['feat_conv_3x3_weight'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['feat_conv_3x3_weight'])
-        arg_params['feat_conv_3x3_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['feat_conv_3x3_bias'])
 
+        #CAM Params
+
+        arg_params['cam_conv_3x3'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['cam_conv_3x3'])
+        arg_params['cam_conv_3x3_bias'] = mx.nd.ones(shape=self.arg_shape_dict['cam_conv_3x3_bias'])
+        arg_params['cam_fully_connected_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['cam_fully_connected_bias'])
+        #arg_params['cam_fully_connected'] = mx.nd.zeros(shape=self.arg_shape_dict['cam_fully_connected_bias'])
+
+        """
         arg_params['rpn_cls_score_weight'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['rpn_cls_score_weight'])
         arg_params['rpn_cls_score_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['rpn_cls_score_bias'])
         arg_params['rpn_bbox_pred_weight'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['rpn_bbox_pred_weight'])
@@ -929,3 +941,4 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         arg_params['rfcn_cls_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['rfcn_cls_bias'])
         arg_params['rfcn_bbox_weight'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['rfcn_bbox_weight'])
         arg_params['rfcn_bbox_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['rfcn_bbox_bias'])
+        """

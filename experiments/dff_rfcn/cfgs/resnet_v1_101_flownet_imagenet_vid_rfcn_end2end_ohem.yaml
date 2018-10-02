@@ -51,9 +51,9 @@ network:
 dataset:
   NUM_CLASSES: 31
   dataset: ImageNetVID
-  dataset_path: "./data/ILSVRC2015"
+  dataset_path: "/data/ILSVRC2015/"
   image_set: DET_train_30classes+VID_train_15frames
-  root_path: "./data"
+  root_path: "/data/"
   test_image_set: VID_val_videos
   proposal: rpn
 TRAIN:

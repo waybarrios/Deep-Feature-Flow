@@ -109,26 +109,15 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     fixed_param_prefix = config.network.FIXED_PARAMS
     data_names = [k[0] for k in train_data.provide_data_single]
     label_names = [k[0] for k in train_data.provide_label_single]
-
-    mod = MutableModule(sym, data_names=data_names, label_names=label_names,
-                        logger=logger, context=ctx, max_data_shapes=[max_data_shape for _ in range(batch_size)],
-                        max_label_shapes=[max_label_shape for _ in range(batch_size)], fixed_param_prefix=fixed_param_prefix)
-
+    #Create Module 
+    mod = mx.mod.Module(sym,data_names=data_names, label_names=label_names)
+ 
     if config.TRAIN.RESUME:
         mod._preload_opt_states = '%s-%04d.states'%(prefix, begin_epoch)
 
     # decide training params
     # metric
-    rpn_eval_metric = metric.RPNAccMetric()
-    rpn_cls_metric = metric.RPNLogLossMetric()
-    rpn_bbox_metric = metric.RPNL1LossMetric()
-    eval_metric = metric.RCNNAccMetric(config)
-    cls_metric = metric.RCNNLogLossMetric(config)
-    bbox_metric = metric.RCNNL1LossMetric(config)
-    eval_metrics = mx.metric.CompositeEvalMetric()
-    # rpn_eval_metric, rpn_cls_metric, rpn_bbox_metric, eval_metric, cls_metric, bbox_metric
-    for child_metric in [rpn_eval_metric, rpn_cls_metric, rpn_bbox_metric, eval_metric, cls_metric, bbox_metric]:
-        eval_metrics.add(child_metric)
+    eval_metrics = mx.metric.Accuracy()
     # callback
     batch_end_callback = callback.Speedometer(train_data.batch_size, frequent=args.frequent)
     means = np.tile(np.array(config.TRAIN.BBOX_MEANS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)

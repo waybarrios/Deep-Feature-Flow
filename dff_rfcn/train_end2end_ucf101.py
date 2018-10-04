@@ -65,7 +65,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     shutil.copy2(os.path.join(curr_path, 'symbols', config.symbol + '.py'), final_output_path)
     sym_instance = eval(config.symbol + '.' + config.symbol)()
     sym = sym_instance.get_train_symbol(config)
-    feat_sym = sym.get_internals()['rpn_cls_score_output']
+    #feat_sym = sym.get_internals()['rpn_cls_score_output']
 
     # setup multi-gpu
     batch_size = len(ctx)
@@ -86,16 +86,9 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
                         config.dataset.traintestlist_path, split=split, flip=config.TRAIN.FLIP)
 
     # load training data
-    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
+    train_data = TrainLoader(sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
 
-    # infer max shape
-    max_data_shape = [('data', (config.TRAIN.BATCH_IMAGES, 3, max([v[0] for v in config.SCALES]), max([v[1] for v in config.SCALES]))),
-                      ('data_ref', (config.TRAIN.BATCH_IMAGES, 3, max([v[0] for v in config.SCALES]), max([v[1] for v in config.SCALES]))),
-                      ('eq_flag', (1,))]
-    max_data_shape, max_label_shape = train_data.infer_shape(max_data_shape)
-    max_data_shape.append(('gt_boxes', (config.TRAIN.BATCH_IMAGES, 100, 5)))
-    print 'providing maximum shape', max_data_shape, max_label_shape
-
+    import ipdb;ipdb.set_trace()
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
     sym_instance.infer_shape(data_shape_dict)

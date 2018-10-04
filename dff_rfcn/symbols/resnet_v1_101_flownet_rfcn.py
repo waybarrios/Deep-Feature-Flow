@@ -484,7 +484,7 @@ class resnet_v1_101_flownet_rfcn(Symbol):
             data=input_layer, kernel=(3, 3), bias= cam_conv_3x3_bias,pad=(1, 1), 
             stride=(1,1), num_filter=1024, name="cam_conv_3x3")
         cam_conv_3x3_relu = mx.sym.Activation(data=cam_conv_3x3, act_type="relu", name="cam_conv_3x3_relu")
-        cam_pooling = mx.sym.Pooling(name='cam_ave_pooling', data=cam_conv_3x3_relu, pool_type='avg', global_pool=True)
+        cam_pooling = mx.sym.Pooling(name='cam_ave_pooling', data=cam_conv_3x3_relu, pool_type='avg', global_pool=True,kernel=(15,20))
         cam_fully_connected_bias = mx.sym.Variable(name='cam_fully_connected_bias', lr_mult=0.0)
         cam_fc_weights = mx.symbol.Variable('cam_fc_weights',init=mx.init.Xavier())
         cam_fully_connected = mx.sym.FullyConnected(data=cam_pooling, name='cam_fc', num_hidden=num_classes,bias=cam_fully_connected_bias,weight=cam_fc_weights)

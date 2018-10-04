@@ -21,7 +21,7 @@ import random
 
 
 from config.config import config
-from utils.image import tensor_vstack, resize, transform
+from utils.image import tensor_vstack, resize
 from rpn.rpn import get_rpn_testbatch, get_rpn_pair_batch, assign_anchor
 from rcnn import get_rcnn_testbatch, get_rcnn_batch
 
@@ -280,8 +280,20 @@ class TrainLoader(mx.io.DataIter):
 
         return {'data': data, 'label': label}
 
+    def transform(self, im, pixel_means):
+        """
+        transform into mxnet tensor
+        substract pixel size and transform to correct format
+        :param im: [height, width, channel] in BGR
+        :param pixel_means: [B, G, R pixel means]
+        :return: [batch, channel, height, width]
+        """
+        im_tensor = np.zeros((3, im.shape[0], im.shape[1]))
+        for i in range(3):
+            im_tensor[i, :, :] = im[:, :, 2 - i] - pixel_means[2 - i]
+        return im_tensor
 
-    def get_images_label(slef, iroidb, config):
+    def get_images_label(self, iroidb, config):
         """
         preprocess image and return processed roidb
         :param roidb: a list of roidb
@@ -310,12 +322,12 @@ class TrainLoader(mx.io.DataIter):
             max_size = config.SCALES[scale_ind][1]
 
             im, im_scale = resize(im, target_size, max_size, stride=config.network.IMAGE_STRIDE)
-            im_tensor = transform(im, config.network.PIXEL_MEANS)
+            im_tensor = self.transform(im, config.network.PIXEL_MEANS)
             processed_ims.append(im_tensor)
 
             processed_labels.append(roi_rec['label'])
 
-            im_info = [im_tensor.shape[2], im_tensor.shape[3], im_scale]
+            im_info = [im_tensor.shape[1], im_tensor.shape[2], im_scale]
             new_rec['im_info'] = im_info
             processed_roidb.append(new_rec)
 

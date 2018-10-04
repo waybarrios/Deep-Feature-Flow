@@ -119,6 +119,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     # metric
     eval_metrics = mx.metric.Accuracy()
     # callback
+    batch_end_callback = mx.callback.Speedometer(train_data.batch_size, frequent=args.frequent)
     epoch_end_callback = mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True)
     # decide learning rate
     base_lr = lr

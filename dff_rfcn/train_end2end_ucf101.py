@@ -88,10 +88,9 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     # load training data
     train_data = TrainLoader(sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
 
-    import ipdb;ipdb.set_trace()
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
-    sym_instance.infer_shape(data_shape_dict)
+    sym.infer_shape(data_ref=data_shape_dict['data'])
 
     # load and initialize params
     if config.TRAIN.RESUME:

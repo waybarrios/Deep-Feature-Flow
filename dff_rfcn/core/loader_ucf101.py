@@ -173,7 +173,7 @@ class TrainLoader(mx.io.DataIter):
         self.index = np.arange(self.size)
 
         # decide data and label names
-        self.data_name = ['data', 'im_info']
+        self.data_name = ['data']
         self.label_name = ['label']
 
         # status variable for synchronization between get_data and get_label
@@ -271,10 +271,9 @@ class TrainLoader(mx.io.DataIter):
         imgs, labels, roidb = self.get_images_label(iroidb, self.cfg)
         im_array = imgs
         label_array = labels
-        im_info = np.array([roidb[0]['im_info']], dtype=np.float32)
+        #im_info = np.array([roidb[0]['im_info']], dtype=np.float32)
 
-        data = {'data': im_array,
-                'im_info': im_info}
+        data = {'data': im_array}
         label = {'label': label_array}
 
 

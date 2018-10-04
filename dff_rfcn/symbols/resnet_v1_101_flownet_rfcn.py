@@ -822,6 +822,7 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         arg_params['cam_conv_3x3_bias'] = mx.nd.ones(shape=self.arg_shape_dict['cam_conv_3x3_bias'])
         arg_params['cam_fully_connected_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['cam_fully_connected_bias'])
         #arg_params['cam_fully_connected'] = mx.nd.zeros(shape=self.arg_shape_dict['cam_fully_connected_bias'])
+        arg_params['cam_fc_weights'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['cam_fc_weights'])
 
         """
         arg_params['rpn_cls_score_weight'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['rpn_cls_score_weight'])

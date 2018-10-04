@@ -812,13 +812,13 @@ class resnet_v1_101_flownet_rfcn(Symbol):
         return group
 
     def init_weight(self, cfg, arg_params, aux_params):
-        arg_params['Convolution5_scale_weight'] = mx.nd.zeros(shape=self.arg_shape_dict['Convolution5_scale_weight'])
-        arg_params['Convolution5_scale_bias'] = mx.nd.ones(shape=self.arg_shape_dict['Convolution5_scale_bias'])
+        #arg_params['Convolution5_scale_weight'] = mx.nd.zeros(shape=self.arg_shape_dict['Convolution5_scale_weight'])
+        #arg_params['Convolution5_scale_bias'] = mx.nd.ones(shape=self.arg_shape_dict['Convolution5_scale_bias'])
 
 
         #CAM Params
 
-        arg_params['cam_conv_3x3'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['cam_conv_3x3'])
+        arg_params['cam_conv_3x3_weight'] = mx.random.normal(0, 0.01, shape=self.arg_shape_dict['cam_conv_3x3_weight'])
         arg_params['cam_conv_3x3_bias'] = mx.nd.ones(shape=self.arg_shape_dict['cam_conv_3x3_bias'])
         arg_params['cam_fully_connected_bias'] = mx.nd.zeros(shape=self.arg_shape_dict['cam_fully_connected_bias'])
         #arg_params['cam_fully_connected'] = mx.nd.zeros(shape=self.arg_shape_dict['cam_fully_connected_bias'])

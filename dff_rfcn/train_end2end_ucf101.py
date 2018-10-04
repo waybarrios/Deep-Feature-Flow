@@ -90,8 +90,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
 
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
-    sym.infer_shape(data_ref=data_shape_dict['data'])
-
+    sym_instance.infer_shape(data_shape_dict)
     # load and initialize params
     if config.TRAIN.RESUME:
         print('continue training from ', begin_epoch)

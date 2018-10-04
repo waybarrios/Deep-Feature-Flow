@@ -119,17 +119,14 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     # metric
     eval_metrics = mx.metric.Accuracy()
     # callback
-    batch_end_callback = callback.Speedometer(train_data.batch_size, frequent=args.frequent)
-    means = np.tile(np.array(config.TRAIN.BBOX_MEANS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)
-    stds = np.tile(np.array(config.TRAIN.BBOX_STDS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)
-    epoch_end_callback = [mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True), callback.do_checkpoint(prefix, means, stds)]
+    epoch_end_callback = mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True)
     # decide learning rate
     base_lr = lr
     lr_factor = config.TRAIN.lr_factor
     lr_epoch = [float(epoch) for epoch in lr_step.split(',')]
     lr_epoch_diff = [epoch - begin_epoch for epoch in lr_epoch if epoch > begin_epoch]
     lr = base_lr * (lr_factor ** (len(lr_epoch) - len(lr_epoch_diff)))
-    lr_iters = [int(epoch * len(roidb) / batch_size) for epoch in lr_epoch_diff]
+    lr_iters = [int(epoch * len(gtdb) / batch_size) for epoch in lr_epoch_diff]
     print('lr', lr, 'lr_epoch_diff', lr_epoch_diff, 'lr_iters', lr_iters)
     lr_scheduler = WarmupMultiFactorScheduler(lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr, config.TRAIN.warmup_step)
     # optimizer

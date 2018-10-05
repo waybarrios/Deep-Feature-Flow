@@ -22,6 +22,7 @@ import os
 import sys
 from config.config import config, update_config
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Train R-FCN network')
     # general
@@ -35,6 +36,7 @@ def parse_args():
     parser.add_argument('--frequent', help='frequency of logging', default=config.default.frequent, type=int)
     args = parser.parse_args()
     return args
+
 
 args = parse_args()
 curr_path = os.path.abspath(os.path.dirname(__file__))
@@ -56,16 +58,19 @@ from utils.load_model import load_param
 from utils.PrefetchingIter import PrefetchingIter
 from utils.lr_scheduler import WarmupMultiFactorScheduler
 
+from mxnet.module import Module
+
 
 def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
     logger, final_output_path = create_logger(config.output_path, args.cfg, config.dataset.image_set)
     prefix = os.path.join(final_output_path, prefix)
 
     # load symbol
+    config.symbol = 'resnet_v1_101_flownet_rfcn_ucf101'
     shutil.copy2(os.path.join(curr_path, 'symbols', config.symbol + '.py'), final_output_path)
     sym_instance = eval(config.symbol + '.' + config.symbol)()
     sym = sym_instance.get_train_symbol(config)
-    feat_sym = sym.get_internals()['rpn_cls_score_output']
+    # feat_sym = sym.get_internals()['rpn_cls_score_output']
 
     # setup multi-gpu
     batch_size = len(ctx)
@@ -86,20 +91,11 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
                         config.dataset.traintestlist_path, split=split, flip=config.TRAIN.FLIP)
 
     # load training data
-    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
-
-    # infer max shape
-    max_data_shape = [('data', (config.TRAIN.BATCH_IMAGES, 3, max([v[0] for v in config.SCALES]), max([v[1] for v in config.SCALES]))),
-                      ('data_ref', (config.TRAIN.BATCH_IMAGES, 3, max([v[0] for v in config.SCALES]), max([v[1] for v in config.SCALES]))),
-                      ('eq_flag', (1,))]
-    max_data_shape, max_label_shape = train_data.infer_shape(max_data_shape)
-    max_data_shape.append(('gt_boxes', (config.TRAIN.BATCH_IMAGES, 100, 5)))
-    print 'providing maximum shape', max_data_shape, max_label_shape
+    train_data = TrainLoader(sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
 
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
     sym_instance.infer_shape(data_shape_dict)
-
     # load and initialize params
     if config.TRAIN.RESUME:
         print('continue training from ', begin_epoch)
@@ -118,40 +114,28 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     fixed_param_prefix = config.network.FIXED_PARAMS
     data_names = [k[0] for k in train_data.provide_data_single]
     label_names = [k[0] for k in train_data.provide_label_single]
-
-    mod = MutableModule(sym, data_names=data_names, label_names=label_names,
-                        logger=logger, context=ctx, max_data_shapes=[max_data_shape for _ in range(batch_size)],
-                        max_label_shapes=[max_label_shape for _ in range(batch_size)], fixed_param_prefix=fixed_param_prefix)
+    # Create Module
+    mod = Module(sym, data_names=data_names, label_names=label_names)
 
     if config.TRAIN.RESUME:
-        mod._preload_opt_states = '%s-%04d.states'%(prefix, begin_epoch)
+        mod._preload_opt_states = '%s-%04d.states' % (prefix, begin_epoch)
 
     # decide training params
     # metric
-    rpn_eval_metric = metric.RPNAccMetric()
-    rpn_cls_metric = metric.RPNLogLossMetric()
-    rpn_bbox_metric = metric.RPNL1LossMetric()
-    eval_metric = metric.RCNNAccMetric(config)
-    cls_metric = metric.RCNNLogLossMetric(config)
-    bbox_metric = metric.RCNNL1LossMetric(config)
-    eval_metrics = mx.metric.CompositeEvalMetric()
-    # rpn_eval_metric, rpn_cls_metric, rpn_bbox_metric, eval_metric, cls_metric, bbox_metric
-    for child_metric in [rpn_eval_metric, rpn_cls_metric, rpn_bbox_metric, eval_metric, cls_metric, bbox_metric]:
-        eval_metrics.add(child_metric)
+    eval_metrics = mx.metric.Accuracy()
     # callback
-    batch_end_callback = callback.Speedometer(train_data.batch_size, frequent=args.frequent)
-    means = np.tile(np.array(config.TRAIN.BBOX_MEANS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)
-    stds = np.tile(np.array(config.TRAIN.BBOX_STDS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)
-    epoch_end_callback = [mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True), callback.do_checkpoint(prefix, means, stds)]
+    batch_end_callback = mx.callback.Speedometer(train_data.batch_size, frequent=args.frequent)
+    epoch_end_callback = mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True)
     # decide learning rate
     base_lr = lr
     lr_factor = config.TRAIN.lr_factor
     lr_epoch = [float(epoch) for epoch in lr_step.split(',')]
     lr_epoch_diff = [epoch - begin_epoch for epoch in lr_epoch if epoch > begin_epoch]
     lr = base_lr * (lr_factor ** (len(lr_epoch) - len(lr_epoch_diff)))
-    lr_iters = [int(epoch * len(roidb) / batch_size) for epoch in lr_epoch_diff]
+    lr_iters = [int(epoch * len(gtdb) / batch_size) for epoch in lr_epoch_diff]
     print('lr', lr, 'lr_epoch_diff', lr_epoch_diff, 'lr_iters', lr_iters)
-    lr_scheduler = WarmupMultiFactorScheduler(lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr, config.TRAIN.warmup_step)
+    lr_scheduler = WarmupMultiFactorScheduler(lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr,
+                                              config.TRAIN.warmup_step)
     # optimizer
     optimizer_params = {'momentum': config.TRAIN.momentum,
                         'wd': config.TRAIN.wd,
@@ -173,8 +157,10 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
 def main():
     print('Called with argument:', args)
     ctx = [mx.gpu(int(i)) for i in config.gpus.split(',')]
-    train_net(args, ctx, config.network.pretrained, config.network.pretrained_flow, config.network.pretrained_epoch, config.TRAIN.model_prefix,
+    train_net(args, ctx, config.network.pretrained, config.network.pretrained_flow, config.network.pretrained_epoch,
+              config.TRAIN.model_prefix,
               config.TRAIN.begin_epoch, config.TRAIN.end_epoch, config.TRAIN.lr, config.TRAIN.lr_step)
+
 
 if __name__ == '__main__':
     main()

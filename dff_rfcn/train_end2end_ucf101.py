@@ -22,6 +22,7 @@ import os
 import sys
 from config.config import config, update_config
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Train R-FCN network')
     # general
@@ -35,6 +36,7 @@ def parse_args():
     parser.add_argument('--frequent', help='frequency of logging', default=config.default.frequent, type=int)
     args = parser.parse_args()
     return args
+
 
 args = parse_args()
 curr_path = os.path.abspath(os.path.dirname(__file__))
@@ -56,16 +58,16 @@ from utils.load_model import load_param
 from utils.PrefetchingIter import PrefetchingIter
 from utils.lr_scheduler import WarmupMultiFactorScheduler
 
-
 def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
     logger, final_output_path = create_logger(config.output_path, args.cfg, config.dataset.image_set)
     prefix = os.path.join(final_output_path, prefix)
 
     # load symbol
+    config.symbol = 'resnet_v1_101_flownet_rfcn_ucf101'
     shutil.copy2(os.path.join(curr_path, 'symbols', config.symbol + '.py'), final_output_path)
     sym_instance = eval(config.symbol + '.' + config.symbol)()
     sym = sym_instance.get_train_symbol(config)
-    #feat_sym = sym.get_internals()['rpn_cls_score_output']
+
 
     # setup multi-gpu
     batch_size = len(ctx)
@@ -109,11 +111,13 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     fixed_param_prefix = config.network.FIXED_PARAMS
     data_names = [k[0] for k in train_data.provide_data_single]
     label_names = [k[0] for k in train_data.provide_label_single]
-    #Create Module 
+    #module
     mod = mx.mod.Module(sym,data_names=data_names, label_names=label_names)
  
+
+
     if config.TRAIN.RESUME:
-        mod._preload_opt_states = '%s-%04d.states'%(prefix, begin_epoch)
+        mod._preload_opt_states = '%s-%04d.states' % (prefix, begin_epoch)
 
     # decide training params
     # metric
@@ -129,7 +133,8 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     lr = base_lr * (lr_factor ** (len(lr_epoch) - len(lr_epoch_diff)))
     lr_iters = [int(epoch * len(gtdb) / batch_size) for epoch in lr_epoch_diff]
     print('lr', lr, 'lr_epoch_diff', lr_epoch_diff, 'lr_iters', lr_iters)
-    lr_scheduler = WarmupMultiFactorScheduler(lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr, config.TRAIN.warmup_step)
+    lr_scheduler = WarmupMultiFactorScheduler(lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr,
+                                              config.TRAIN.warmup_step)
     # optimizer
     optimizer_params = {'momentum': config.TRAIN.momentum,
                         'wd': config.TRAIN.wd,
@@ -151,8 +156,10 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
 def main():
     print('Called with argument:', args)
     ctx = [mx.gpu(int(i)) for i in config.gpus.split(',')]
-    train_net(args, ctx, config.network.pretrained, config.network.pretrained_flow, config.network.pretrained_epoch, config.TRAIN.model_prefix,
+    train_net(args, ctx, config.network.pretrained, config.network.pretrained_flow, config.network.pretrained_epoch,
+              config.TRAIN.model_prefix,
               config.TRAIN.begin_epoch, config.TRAIN.end_epoch, config.TRAIN.lr, config.TRAIN.lr_step)
+
 
 if __name__ == '__main__':
     main()

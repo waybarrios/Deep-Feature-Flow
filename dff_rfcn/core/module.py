@@ -35,7 +35,6 @@ from mxnet import optimizer as opt
 class Module(BaseModule):
     """Module is a basic module that wrap a `Symbol`. It is functionally the same
     as the `FeedForward` model, except under the module API.
-
     Parameters
     ----------
     symbol : Symbol
@@ -109,7 +108,6 @@ class Module(BaseModule):
     @staticmethod
     def load(prefix, epoch, load_optimizer_states=False, **kwargs):
         """Create a model from previously saved checkpoint.
-
         Parameters
         ----------
         prefix : str
@@ -148,7 +146,6 @@ class Module(BaseModule):
     def save_checkpoint(self, prefix, epoch, save_optimizer_states=False):
         """Save current progress to checkpoint.
         Use mx.callback.module_checkpoint as epoch_end_callback to save during training.
-
         Parameters
         ----------
         prefix : str
@@ -237,7 +234,6 @@ class Module(BaseModule):
     def init_params(self, initializer=Uniform(0.01), arg_params=None, aux_params=None,
                     allow_missing=False, force_init=False):
         """Initialize the parameters and auxiliary states.
-
         Parameters
         ----------
         initializer : Initializer
@@ -294,7 +290,6 @@ class Module(BaseModule):
 
     def set_params(self, arg_params, aux_params, allow_missing=False, force_init=True):
         """Assign parameter and aux state values.
-
         Parameters
         ----------
         arg_params : dict
@@ -306,7 +301,6 @@ class Module(BaseModule):
             called to fill those missing params.
         force_init : bool
             If true, will force re-initialize even if already initialized.
-
         Examples
         --------
         An example of setting module parameters::
@@ -335,7 +329,6 @@ class Module(BaseModule):
              grad_req='write'):
         """Bind the symbols to construct executors. This is necessary before one
         can perform computation with the module.
-
         Parameters
         ----------
         data_shapes : list of (str, tuple)
@@ -429,7 +422,6 @@ class Module(BaseModule):
 
     def reshape(self, data_shapes, label_shapes=None):
         """Reshape the module for new input shapes.
-
         Parameters
         ----------
         data_shapes : list of (str, tuple)
@@ -449,7 +441,6 @@ class Module(BaseModule):
     def init_optimizer(self, kvstore='local', optimizer='sgd',
                        optimizer_params=(('learning_rate', 0.01),), force_init=False):
         """Install and initialize optimizers.
-
         Parameters
         ----------
         kvstore : str or KVStore
@@ -527,7 +518,6 @@ class Module(BaseModule):
     def borrow_optimizer(self, shared_module):
         """Borrow optimizer from a shared module. Used in bucketing, where exactly the same
         optimizer (esp. kvstore) is used.
-
         Parameters
         ----------
         shared_module : Module
@@ -541,7 +531,6 @@ class Module(BaseModule):
 
     def forward(self, data_batch, is_train=None):
         """Forward computation.
-
         Parameters
         ----------
         data_batch : DataBatch
@@ -554,7 +543,6 @@ class Module(BaseModule):
 
     def backward(self, out_grads=None):
         """Backward computation.
-
         Parameters
         ----------
         out_grads : NDArray or list of NDArray, optional
@@ -585,7 +573,6 @@ class Module(BaseModule):
 
     def get_outputs(self, merge_multi_context=True):
         """Get outputs of the previous forward computation.
-
         Parameters
         ----------
         merge_multi_context : bool
@@ -593,7 +580,6 @@ class Module(BaseModule):
             will be collected from multiple devices. A `True` value indicate that we
             should merge the collected results so that they look like from a single
             executor.
-
         Returns
         -------
         If `merge_multi_context` is `True`, it is like `[out1, out2]`. Otherwise, it
@@ -605,7 +591,6 @@ class Module(BaseModule):
 
     def get_input_grads(self, merge_multi_context=True):
         """Get the gradients with respect to the inputs of the module.
-
         Parameters
         ----------
         merge_multi_context : bool
@@ -613,7 +598,6 @@ class Module(BaseModule):
             will be collected from multiple devices. A `True` value indicate that we
             should merge the collected results so that they look like from a single
             executor.
-
         Returns
         -------
         If `merge_multi_context` is `True`, it is like `[grad1, grad2]`. Otherwise, it
@@ -625,7 +609,6 @@ class Module(BaseModule):
 
     def get_states(self, merge_multi_context=True):
         """Get states from all devices
-
         Parameters
         ----------
         merge_multi_context : bool
@@ -633,7 +616,6 @@ class Module(BaseModule):
             will be collected from multiple devices. A `True` value indicate that we
             should merge the collected results so that they look like from a single
             executor.
-
         Returns
         -------
         If `merge_multi_context` is `True`, it is like `[out1, out2]`. Otherwise, it
@@ -645,7 +627,6 @@ class Module(BaseModule):
 
     def set_states(self, states=None, value=None):
         """Set value for states. Only one of states & value can be specified.
-
         Parameters
         ----------
         states : list of list of NDArrays
@@ -659,7 +640,6 @@ class Module(BaseModule):
 
     def update_metric(self, eval_metric, labels):
         """Evaluate and accumulate evaluation metric on outputs of the last forward computation.
-
         Parameters
         ----------
         eval_metric : EvalMetric
@@ -678,7 +658,6 @@ class Module(BaseModule):
 
     def save_optimizer_states(self, fname):
         """Save optimizer (updater) state to file
-
         Parameters
         ----------
         fname : str
@@ -694,7 +673,6 @@ class Module(BaseModule):
 
     def load_optimizer_states(self, fname):
         """Load optimizer (updater) state from file
-
         Parameters
         ----------
         fname : str
@@ -715,7 +693,6 @@ class Module(BaseModule):
 
 class MutableModule(BaseModule):
     """A mutable module is a module that supports variable input data.
-
     Parameters
     ----------
     symbol : Symbol
@@ -852,7 +829,6 @@ class MutableModule(BaseModule):
     def save_checkpoint(self, prefix, epoch, save_optimizer_states=False):
         """Save current progress to checkpoint.
         Use mx.callback.module_checkpoint as epoch_end_callback to save during training.
-
         Parameters
         ----------
         prefix : str
@@ -885,7 +861,6 @@ class MutableModule(BaseModule):
             force_rebind=False, force_init=False, begin_epoch=0, num_epoch=None,
             validation_metric=None, monitor=None, prefix=None):
         """Train the module parameters.
-
         Parameters
         ----------
         train_data : DataIter
@@ -937,7 +912,6 @@ class MutableModule(BaseModule):
             this value as N+1.
         num_epoch : int
             Number of epochs to run training.
-
         Examples
         --------
         An example of using fit for training::

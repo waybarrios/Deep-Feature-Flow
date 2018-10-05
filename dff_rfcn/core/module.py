@@ -729,7 +729,8 @@ class MutableModule(BaseModule):
     fixed_param_prefix : list of str, indicating fixed parameters
     """
     def __init__(self, symbol, data_names, label_names,
-                 logger=logging, context=ctx.cpu(), work_load_list=None):
+                 logger=logging, context=ctx.cpu(), work_load_list=None,
+                 max_data_shapes=None, max_label_shapes=None, fixed_param_prefix=None):
         super(MutableModule, self).__init__(logger=logger)
         self._symbol = symbol
         self._data_names = data_names
@@ -738,9 +739,9 @@ class MutableModule(BaseModule):
         self._work_load_list = work_load_list
 
         self._curr_module = None
-        #self._max_data_shapes = max_data_shapes
-        #self._max_label_shapes = max_label_shapes
-        #self._fixed_param_prefix = fixed_param_prefix
+        self._max_data_shapes = max_data_shapes
+        self._max_label_shapes = max_label_shapes
+        self._fixed_param_prefix = fixed_param_prefix
 
         fixed_param_names = list()
         if fixed_param_prefix is not None:
@@ -812,7 +813,7 @@ class MutableModule(BaseModule):
         self.for_training = for_training
         self.inputs_need_grad = inputs_need_grad
         self.binded = True
-        """
+
         max_shapes_dict = dict()
         if self._max_data_shapes is not None:
             max_shapes_dict.update(dict(self._max_data_shapes[0]))
@@ -836,7 +837,6 @@ class MutableModule(BaseModule):
 
         if len(max_label_shapes) == 0:
             max_label_shapes = None
-        """
 
         module = Module(self._symbol, self._data_names, self._label_names, logger=self.logger,
                         context=self._context, work_load_list=self._work_load_list,

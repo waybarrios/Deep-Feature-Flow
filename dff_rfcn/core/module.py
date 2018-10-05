@@ -798,7 +798,7 @@ class MutableModule(BaseModule):
             max_shapes_dict.update(dict(self._max_label_shapes[0]))
 
         max_data_shapes = list()
-        for name, shape in data_shapes[0]:
+        for name, shape in [data_shapes[0]]:
             if name in max_shapes_dict:
                 max_data_shapes.append((name, max_shapes_dict[name]))
             else:
@@ -806,7 +806,7 @@ class MutableModule(BaseModule):
 
         max_label_shapes = list()
         if not label_shapes.count(None) == len(label_shapes):
-            for name, shape in label_shapes[0]:
+            for name, shape in [label_shapes[0]]:
                 if name in max_shapes_dict:
                     max_label_shapes.append((name, max_shapes_dict[name]))
                 else:

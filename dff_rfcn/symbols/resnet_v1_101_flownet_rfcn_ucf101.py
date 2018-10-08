@@ -735,7 +735,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         res5c_relu = mx.symbol.Activation(name='res5c_relu', data=res5c, act_type='relu')
         return res5c_relu
 
-    def CAM(self, input_layer, labels, num_classes):
+    def CAM(self, input_layer,num_classes):
 
         cam_conv_3x3_bias = mx.sym.Variable(name='cam_conv_3x3_bias', lr_mult=0.0)
         cam_conv_3x3 = mx.sym.Convolution(
@@ -748,10 +748,10 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         cam_fc_weights = mx.symbol.Variable('cam_fc_weights', init=mx.init.Xavier())
         cam_fully_connected = mx.sym.FullyConnected(data=cam_pooling, name='cam_fc', num_hidden=num_classes,
                                                     bias=cam_fully_connected_bias, weight=cam_fc_weights)
-        cam_softmax = mx.sym.SoftmaxOutput(data=cam_fully_connected, label=labels, name='cam_softmax')
-        return cam_softmax
+        
+        return cam_fully_connected,cam_conv_3x3_relu
 
-    def resnet101_cam(self, data, labels, num_classes, ):
+    def resnet101_cam(self, data, num_classes, ):
 
         resnet_features = self.get_resnet_v1(data)
         return self.CAM(resnet_features, labels, num_classes)
@@ -857,9 +857,11 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         labels = mx.sym.Variable(name='label')
 
         # computes CAM
-        cam_resnet = self.resnet101_cam(data, labels, num_classes)
+        cam_resnet,_ = self.resnet101_cam(data, num_classes)
 
-        group = mx.sym.Group([cam_resnet])
+        cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')
+
+        group = mx.sym.Group([cam_softmax])
         self.sym = group
         return group
 
@@ -874,12 +876,12 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         im_info = mx.sym.Variable(name="im_info")
         labels = mx.sym.Variable(name='label')
 
-        # computes CAM
-        cam_resnet = self.resnet101_cam(data, labels, num_classes)
+        # Get CAM
+        cam_resnet,conv_3x3 = self.resnet101_cam(data, labels, num_classes)
 
         group = mx.sym.Group([cam_resnet])
         self.sym = group
-        return group
+        return group,conv_3x3
         
 
     def get_key_test_symbol(self, cfg):

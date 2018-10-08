@@ -850,7 +850,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         # config alias for convenient
         num_classes = cfg.dataset.NUM_CLASSES  # need to change to UCF 101
         num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
-        num_anchors = cfg.network.NUM_ANCHORS
+        
 
         data = mx.sym.Variable(name="data")
         im_info = mx.sym.Variable(name="im_info")
@@ -862,6 +862,25 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         group = mx.sym.Group([cam_resnet])
         self.sym = group
         return group
+
+    def get_cam_test_symbol(self,cfg):
+
+        # config alias for convenient
+        num_classes = cfg.dataset.NUM_CLASSES  # need to change to UCF 101
+        num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
+        
+
+        data = mx.sym.Variable(name="data")
+        im_info = mx.sym.Variable(name="im_info")
+        labels = mx.sym.Variable(name='label')
+
+        # computes CAM
+        cam_resnet = self.resnet101_cam(data, labels, num_classes)
+
+        group = mx.sym.Group([cam_resnet])
+        self.sym = group
+        return group
+        
 
     def get_key_test_symbol(self, cfg):
 
@@ -1031,6 +1050,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         group = mx.sym.Group([rois, cls_prob, bbox_pred])
         self.sym = group
         return group
+
 
     def get_batch_test_symbol(self, cfg):
 

@@ -858,7 +858,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
 
         # computes CAM
         cam_resnet,_ = self.resnet101_cam(data, num_classes)
-
+        #clasification 
         cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')
 
         group = mx.sym.Group([cam_softmax])
@@ -879,9 +879,9 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         # Get CAM
         cam_resnet,conv_3x3 = self.resnet101_cam(data, labels, num_classes)
 
-        group = mx.sym.Group([cam_resnet])
+        group = mx.sym.Group([cam_resnet,conv_3x3])
         self.sym = group
-        return group,conv_3x3
+        return group
         
 
     def get_key_test_symbol(self, cfg):

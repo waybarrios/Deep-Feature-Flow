@@ -751,10 +751,10 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         
         return cam_fully_connected,cam_conv_3x3_relu
 
-    def resnet101_cam(self, data, num_classes, ):
+    def resnet101_cam(self, data, num_classes):
 
         resnet_features = self.get_resnet_v1(data)
-        return self.CAM(resnet_features, labels, num_classes)
+        return self.CAM(resnet_features,num_classes)
 
     def get_flownet(self, img_cur, img_ref):
         data = mx.symbol.Concat(img_cur / 255.0, img_ref / 255.0, dim=1)
@@ -877,7 +877,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         labels = mx.sym.Variable(name='label')
 
         # Get CAM
-        cam_resnet,conv_3x3 = self.resnet101_cam(data, labels, num_classes)
+        cam_resnet,conv_3x3 = self.resnet101_cam(data,num_classes)
 
         group = mx.sym.Group([cam_resnet,conv_3x3])
         self.sym = group

@@ -90,7 +90,7 @@ def main():
     arg_params, aux_params = load_param(model, 2, process=True)
     weight = arg_params['cam_fc_weights']
     key_predictor = Predictor(vis_sym, data_names, label_names,
-                          context=[mx.gpu(0)], max_data_shapes=max_data_shape,
+                          context=[mx.gpu(0)], max_data_shapes=[max_data_shape],
                           provide_data=provide_data, provide_label=provide_label,
                           arg_params=arg_params, aux_params=aux_params)
 
@@ -101,13 +101,17 @@ def main():
         data_batch = mx.io.DataBatch(data=[data[idx]], label=[], pad=0, index=idx,
                                      provide_data=[[(k, v.shape) for k, v in zip(data_names, data[idx])]],
                                      provide_label=[None])
-        cam_resnet, conv_3x3 = key_predictor.predict(data_batch)
+
+        out  = key_predictor.predict(data_batch)[0]
+
+        cam_resnet = out['cam_fc_output']
+        conv_3x3 = out['cam_conv_3x3_relu_output']
 
         # visualize
         im = cv2.imread(im_name)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
-        heat_map = heat_map_generate(conv_3x3, weight)
+        heat_map = heat_map_generate(conv_3x3, weight, np.argmax(cam_resnet.asnumpy()))
 
         # show_heatmap
         out_im = draw_heatmap(im, heat_map)
@@ -117,11 +121,14 @@ def main():
     print 'done'
 
 
-def heat_map_generate(conv_3x3, weight):
-    feature_map = np.asnumpy(conv_3x3)
-    weight = np.asnumpy(weight)
+def heat_map_generate(conv_3x3, weight, index):
+    feature_map = conv_3x3.asnumpy()
+    weight = weight.asnumpy()
+    weight = weight[index,:]
 
-    heat_map = np.average(feature_map, axis=2, weights=weight)
+    heat_map = np.average(feature_map, axis=1, weights=weight)
+
+    heat_map = np.transpose(heat_map, (1, 2, 0))
 
     return heat_map
 

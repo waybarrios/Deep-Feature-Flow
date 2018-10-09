@@ -798,7 +798,8 @@ class MutableModule(BaseModule):
             max_shapes_dict.update(dict(self._max_label_shapes[0]))
 
         max_data_shapes = list()
-        for name, shape in [data_shapes[0]]:
+
+        for name, shape in data_shapes[0]:
             if name in max_shapes_dict:
                 max_data_shapes.append((name, max_shapes_dict[name]))
             else:
@@ -806,7 +807,7 @@ class MutableModule(BaseModule):
 
         max_label_shapes = list()
         if not label_shapes.count(None) == len(label_shapes):
-            for name, shape in [label_shapes[0]]:
+            for name, shape in label_shapes[0]:
                 if name in max_shapes_dict:
                     max_label_shapes.append((name, max_shapes_dict[name]))
                 else:
@@ -922,7 +923,7 @@ class MutableModule(BaseModule):
         """
         assert num_epoch is not None, 'please specify number of epochs'
 
-        self.bind(data_shapes=train_data.provide_data, label_shapes=train_data.provide_label,
+        self.bind(data_shapes=[train_data.provide_data], label_shapes=[train_data.provide_label],
                   for_training=True, force_rebind=force_rebind)
         if monitor is not None:
             self.install_monitor(monitor)
@@ -998,9 +999,9 @@ class MutableModule(BaseModule):
 
         # get input_shapes
         if is_train:
-            input_shapes = [dict([data_batch.provide_data[i]] + [data_batch.provide_label[i]]) for i in xrange(len(self._context))]
+            input_shapes = [dict(data_batch.provide_data[i] + data_batch.provide_label[i]) for i in xrange(len(self._context))]
         else:
-            input_shapes = [dict([data_batch.provide_data[i]]) for i in xrange(len(data_batch.provide_data))]
+            input_shapes = [dict(data_batch.provide_data[i]) for i in xrange(len(data_batch.provide_data))]
 
         # decide if shape changed
         shape_changed = len(current_shapes) != len(input_shapes)

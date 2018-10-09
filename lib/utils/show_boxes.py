@@ -8,6 +8,7 @@
 import matplotlib.pyplot as plt
 import cv2
 import random
+import numpy as np
 
 def show_boxes(im, dets, classes, scale = 1.0):
     plt.cla()
@@ -48,3 +49,17 @@ def draw_boxes(im, dets, classes, scale = 1.0):
                 cv2.putText(im, '%s %.3f' % (cls_name, score), (bbox[0], bbox[1]+10),
                         color=color_white, fontFace=cv2.FONT_HERSHEY_COMPLEX, fontScale=1, thickness=2)
     return im
+
+
+def draw_heatmap(im, cam):
+
+    cam -= cam.min()
+    cam /= cam.max()
+    cam = cv2.resize((cam * 255).astype(np.uint8), (im.shape[1], im.shape[0]))
+
+    heatmap = cv2.applyColorMap(cam, cv2.COLORMAP_JET)
+    heatmap[cam < 64] = 0
+
+    out = cv2.addWeighted(im, 0.8, heatmap, 0.4, 0)
+
+    return out

@@ -101,13 +101,16 @@ def main():
         data_batch = mx.io.DataBatch(data=[data[idx]], label=[], pad=0, index=idx,
                                      provide_data=[[(k, v.shape) for k, v in zip(data_names, data[idx])]],
                                      provide_label=[None])
-        cam_resnet, conv_3x3 = key_predictor.predict(data_batch)
+
+        out  = key_predictor.predict(data_batch)[0]
+
+        cam_resnet = out['cam_fc_output']
+        conv_3x3 = out['cam_conv_3x3_relu_output']
 
         # visualize
         im = cv2.imread(im_name)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-
-        heat_map = heat_map_generate(conv_3x3, weight)
+        heat_map = heat_map_generate(conv_3x3, weight, np.argmax(cam_resnet.asnumpy()))
         # show_heatmap
         out_im = draw_heatmap(im, heat_map)
         _, filename = os.path.split(im_name)
@@ -116,11 +119,14 @@ def main():
     print 'done'
 
 
-def heat_map_generate(conv_3x3, weight):
-    feature_map = np.asnumpy(conv_3x3)
-    weight = np.asnumpy(weight)
+def heat_map_generate(conv_3x3, weight, index):
+    feature_map = conv_3x3.asnumpy()
+    weight = weight.asnumpy()
+    weight = weight[index,:]
 
-    heat_map = np.average(feature_map, axis=2, weights=weight)
+    heat_map = np.average(feature_map, axis=1, weights=weight)
+
+    heat_map = np.transpose(heat_map, (1, 2, 0))
 
     return heat_map
 

@@ -735,7 +735,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         res5c_relu = mx.symbol.Activation(name='res5c_relu', data=res5c, act_type='relu')
         return res5c_relu
 
-    def CAM(self, input_layer,num_classes):
+    def CAM(self, input_layer, num_classes):
 
         cam_conv_3x3_bias = mx.sym.Variable(name='cam_conv_3x3_bias', lr_mult=0.0)
         cam_conv_3x3 = mx.sym.Convolution(
@@ -751,10 +751,11 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         
         return cam_fully_connected,cam_conv_3x3_relu
 
+
     def resnet101_cam(self, data, num_classes):
 
         resnet_features = self.get_resnet_v1(data)
-        return self.CAM(resnet_features,num_classes)
+        return self.CAM(resnet_features, num_classes)
 
     def get_flownet(self, img_cur, img_ref):
         data = mx.symbol.Concat(img_cur / 255.0, img_ref / 255.0, dim=1)
@@ -850,18 +851,31 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         # config alias for convenient
         num_classes = cfg.dataset.NUM_CLASSES  # need to change to UCF 101
         num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
-        
+        data = mx.sym.Variable(name="data")
+        im_info = mx.sym.Variable(name="im_info")
+        labels = mx.sym.Variable(name='label')
+
+        cam_resnet,_ = self.resnet101_cam(data, num_classes)
+        #clasification 
+        cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')
+        group = mx.sym.Group([cam_softmax])
+        self.sym = group
+        return group
+
+    def get_cam_test_symbol(self, cfg):
+
+        # config alias for convenient
+        num_classes = cfg.dataset.NUM_CLASSES  # need to change to UCF 101
+        num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
 
         data = mx.sym.Variable(name="data")
         im_info = mx.sym.Variable(name="im_info")
         labels = mx.sym.Variable(name='label')
 
-        # computes CAM
-        cam_resnet,_ = self.resnet101_cam(data, num_classes)
-        #clasification 
-        cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')
+        # Get CAM
+        cam_resnet, conv_3x3 = self.resnet101_cam(data, num_classes)
 
-        group = mx.sym.Group([cam_softmax])
+        group = mx.sym.Group([cam_resnet, conv_3x3])
         self.sym = group
         return group
 

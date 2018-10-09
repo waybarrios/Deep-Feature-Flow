@@ -50,7 +50,7 @@ def main():
     # get symbol
     pprint.pprint(config)
     config.symbol = 'resnet_v1_101_flownet_rfcn_ucf101'
-    model = '/home/weik/Documents/Deep-Feature-Flow/output/dff_rfcn/imagenet_vid/resnet_v1_101_flownet_imagenet_vid_rfcn_end2end_ohem/DET_train_30classes_VID_train_15frames/dff_rfcn_vid'
+    model = '/code/Deep-Feature-Flow/output/dff_rfcn/imagenet_vid/resnet_v1_101_flownet_imagenet_vid_rfcn_end2end_ohem/DET_train_30classes_VID_train_15frames/dff_rfcn_vid'
     sym_instance = eval(config.symbol + '.' + config.symbol)()
 
     vis_sym = sym_instance.get_cam_test_symbol(config)
@@ -90,7 +90,7 @@ def main():
     arg_params, aux_params = load_param(model, 2, process=True)
     weight = arg_params['cam_fc_weights']
     key_predictor = Predictor(vis_sym, data_names, label_names,
-                          context=[mx.gpu(0)], max_data_shapes=max_data_shape,
+                          context=[mx.gpu(0)], max_data_shapes=[max_data_shape],
                           provide_data=provide_data, provide_label=provide_label,
                           arg_params=arg_params, aux_params=aux_params)
 
@@ -108,7 +108,6 @@ def main():
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         heat_map = heat_map_generate(conv_3x3, weight)
-
         # show_heatmap
         out_im = draw_heatmap(im, heat_map)
         _, filename = os.path.split(im_name)

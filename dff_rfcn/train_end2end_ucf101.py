@@ -114,8 +114,8 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     
     #module
     mod = MutableModule(sym, data_names=data_names, label_names=label_names,
-                        logger=logger, context=ctx, max_data_shapes=[train_data.provide_data_single]*len(ctx),
-                        max_label_shapes=[train_data.provide_label_single]*len(ctx), fixed_param_prefix=fixed_param_prefix)
+                        logger=logger, context=ctx, max_data_shapes=[train_data.provide_data_single for _ in range(len(ctx))],
+                        max_label_shapes=[train_data.provide_label_single for _ in range(len(ctx))], fixed_param_prefix=fixed_param_prefix)
  
 
 
@@ -148,7 +148,6 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
 
     #if not isinstance(train_data, PrefetchingIter):
      #   train_data = PrefetchingIter(train_data)
-
     # train
     mod.fit(train_data, eval_metric=eval_metrics, epoch_end_callback=epoch_end_callback,
             batch_end_callback=batch_end_callback, kvstore=config.default.kvstore,

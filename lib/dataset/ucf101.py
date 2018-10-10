@@ -50,7 +50,8 @@ class UCF101(IMDB):
         data = pd.read_csv(label_csv_path, delimiter=' ', header=None)
         labels = []
         for i in range(data.shape[0]):
-            labels.append(data.ix[i, 1])
+            import ipdb;ipdb.set_trace()
+            labels.append(data.iloc[i, data.columns.get_loc(1)])
         return labels
 
 

@@ -986,6 +986,11 @@ class MutableModule(BaseModule):
             # end of 1 epoch, reset the data-iter for another epoch
             train_data.reset()
 
+    def forward_backward(self,data_batch):
+        """A convenient function that calls both ``forward`` and ``backward``."""
+        self.forward(data_batch, is_train=True)
+        self.backward()
+
 
     def forward(self, data_batch, is_train=None):
         assert self.binded and self.params_initialized

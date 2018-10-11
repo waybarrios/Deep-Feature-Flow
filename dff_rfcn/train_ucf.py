@@ -51,6 +51,7 @@ from core import callback, metric
 # from core.loader import AnchorLoader
 from core.loader_ucf101 import TrainLoader
 from core.module import MutableModule
+from core.moduleway import WayModule
 from utils.create_logger import create_logger
 # from utils.load_data import load_gt_roidb, merge_roidb, filter_roidb
 from utils.load_data_ucf101 import load_gt_imdb
@@ -89,7 +90,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
                         config.dataset.traintestlist_path, split=split, flip=config.TRAIN.FLIP)
 
     # load training data
-    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
+    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=64, shuffle=True, ctx=ctx, aspect_grouping=True)
 
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
@@ -127,7 +128,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
  
    
     # allocate memory given the input data and label shapes
-    mod.bind(data_shapes=train_data.provide_data, label_shapes=train_data.provide_label)
+    mod.bind(data_shapes=train_data.provide_data_single, label_shapes=train_data.provide_label_single)
 
 
     if config.TRAIN.RESUME:

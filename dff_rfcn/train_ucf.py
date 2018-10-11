@@ -58,6 +58,7 @@ from utils.load_data_ucf101 import load_gt_imdb
 from utils.load_model import load_param
 from utils.PrefetchingIter import PrefetchingIter
 from utils.lr_scheduler import WarmupMultiFactorScheduler
+from core.fit import fit
 
 def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
     logger, final_output_path = create_logger(config.output_path, args.cfg, config.dataset.image_set)
@@ -117,8 +118,10 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
 
     mod = mx.mod.Module(symbol=net,
                     context=ctx,
+                    logger=logger,
                     data_names=data_name,
-                    label_names=label_name)
+                    label_names=label_name,
+                    fixed_param_prefix=fixed_param_prefix)
 
 
    
@@ -170,16 +173,28 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     mod.init_params(initializer=mx.init.Uniform(scale=.1))
     # use SGD with learning rate 0.1 to train
    # mod.init_optimizer(optimizer='sgd', optimizer_params=(('learning_rate', 0.1), ))
-    mod.fit(train_data,
-                epoch_end_callback=epoch_end_callback,
-                batch_end_callback=batch_end_callback,
-                optimizer='sgd',
-                optimizer_params=optimizer_params,
-                eval_metric=eval_metrics,
-                num_epoch=2, 
-                begin_epoch=0,
-                arg_params=arg_params, 
-                aux_params=aux_params)
+
+    fit(train_data,
+               epoch_end_callback=epoch_end_callback,
+               batch_end_callback=batch_end_callback,
+               optimizer='sgd',
+               optimizer_params=optimizer_params,
+               eval_metric=eval_metrics,
+               num_epoch=2, 
+               begin_epoch=0,
+               arg_params=arg_params, 
+               aux_params=aux_params)
+
+    #mod.fit(train_data,
+    #            epoch_end_callback=epoch_end_callback,
+    #            batch_end_callback=batch_end_callback,
+    #            optimizer='sgd',
+    #            optimizer_params=optimizer_params,
+    #            eval_metric=eval_metrics,
+    #            num_epoch=2, 
+    #            begin_epoch=0,
+    #            arg_params=arg_params, 
+    #            aux_params=aux_params)
 
     # train
 

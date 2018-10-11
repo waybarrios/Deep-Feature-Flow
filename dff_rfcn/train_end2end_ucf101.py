@@ -89,7 +89,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
                         config.dataset.traintestlist_path, split=split, flip=config.TRAIN.FLIP)
 
     # load training data
-    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=128, shuffle=False, ctx=ctx, aspect_grouping=True)
+    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=128, shuffle=True, ctx=ctx, aspect_grouping=True)
 
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
@@ -145,7 +145,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     # optimizer
     optimizer_params = {'momentum': config.TRAIN.momentum,
                         'wd': config.TRAIN.wd,
-                        'learning_rate': lr,
+                        'learning_rate': base_lr,
                         'lr_scheduler': lr_scheduler,
                         'rescale_grad': 1.0,
                         'clip_gradient': None}
@@ -153,10 +153,11 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     #if not isinstance(train_data, PrefetchingIter):
      #   train_data = PrefetchingIter(train_data)
     # train
-
+    lr_sch = mx.lr_scheduler.FactorScheduler(step=100, factor=0.1)
+    adam = mx.optimizer.create('adam', learning_rate=base_lr)
     mod.fit(train_data, eval_metric=eval_metrics, epoch_end_callback=epoch_end_callback,
             batch_end_callback=batch_end_callback, kvstore=config.default.kvstore,
-            optimizer='sgd', optimizer_params=optimizer_params, 
+            optimizer=adam, optimizer_params=(('learning_rate', base_lr), ('lr_scheduler', lr_sch)), 
             arg_params=arg_params, aux_params=aux_params, begin_epoch=begin_epoch, num_epoch=end_epoch)
 
 

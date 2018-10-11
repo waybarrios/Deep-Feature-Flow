@@ -563,7 +563,8 @@ class Module(BaseModule):
         if self._update_on_kvstore:
             _update_params_on_kvstore(self._exec_group.param_arrays,
                                       self._exec_group.grad_arrays,
-                                      self._kvstore)
+                                      self._kvstore,
+                                      self._param_names)
         else:
             _update_params(self._exec_group.param_arrays,
                            self._exec_group.grad_arrays,
@@ -921,8 +922,7 @@ class MutableModule(BaseModule):
                         num_epoch=10)
         """
         assert num_epoch is not None, 'please specify number of epochs'
-
-        self.bind(data_shapes=[train_data.provide_data], label_shapes=[train_data.provide_label],
+        self.bind(data_shapes=[train_data.provide_data_single], label_shapes=[train_data.provide_label_single],
                   for_training=True, force_rebind=force_rebind)
         if monitor is not None:
             self.install_monitor(monitor)
@@ -986,11 +986,6 @@ class MutableModule(BaseModule):
             # end of 1 epoch, reset the data-iter for another epoch
             train_data.reset()
 
-    def forward_backward(self,data_batch):
-        """A convenient function that calls both ``forward`` and ``backward``."""
-        self.forward(data_batch, is_train=True)
-        self.backward()
-
 
     def forward(self, data_batch, is_train=None):
         assert self.binded and self.params_initialized
@@ -1003,10 +998,9 @@ class MutableModule(BaseModule):
 
         # get input_shapes
         if is_train:
-            input_shapes = [dict(data_batch.provide_data[i] + data_batch.provide_label[i]) for i in xrange(len(self._context))]
+            input_shapes = [dict([data_batch.provide_data[i]] + [data_batch.provide_label[i]]) for i in xrange(len(self._context))]
         else:
             input_shapes = [dict(data_batch.provide_data[i]) for i in xrange(len(data_batch.provide_data))]
-
         # decide if shape changed
         shape_changed = len(current_shapes) != len(input_shapes)
         for pre, cur in zip(current_shapes, input_shapes):

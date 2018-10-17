@@ -749,7 +749,7 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         cam_fully_connected = mx.sym.FullyConnected(data=cam_pooling, name='cam_fc', num_hidden=num_classes,
                                                     bias=cam_fully_connected_bias, weight=cam_fc_weights)
         
-        return cam_fully_connected,cam_conv_3x3_relu
+        return cam_fully_connected
 
 
     def resnet101_cam(self, data, num_classes):
@@ -855,10 +855,12 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         im_info = mx.sym.Variable(name="im_info")
         labels = mx.sym.Variable(name='label')
 
-        cam_resnet,_ = self.resnet101_cam(data, num_classes)
+        cam_resnet = self.resnet101_cam(data, num_classes)
+
+
         #clasification 
         cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')
-        group = mx.sym.Group([cam_softmax])
+        group = mx.sym.Group([cam_softmax,cam_conv3x3])
         self.sym = group
         return group
 
@@ -873,29 +875,12 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         labels = mx.sym.Variable(name='label')
 
         # Get CAM
-        cam_resnet, conv_3x3 = self.resnet101_cam(data, num_classes)
+        cam_resnet = self.resnet101_cam(data, num_classes)
 
-        group = mx.sym.Group([cam_resnet, conv_3x3])
+        group = mx.sym.Group([cam_resnet])
         self.sym = group
         return group
 
-    def get_cam_test_symbol(self,cfg):
-
-        # config alias for convenient
-        num_classes = cfg.dataset.NUM_CLASSES  # need to change to UCF 101
-        num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
-        
-
-        data = mx.sym.Variable(name="data")
-        im_info = mx.sym.Variable(name="im_info")
-        labels = mx.sym.Variable(name='label')
-
-        # Get CAM
-        cam_resnet,conv_3x3 = self.resnet101_cam(data,num_classes)
-
-        group = mx.sym.Group([cam_resnet,conv_3x3])
-        self.sym = group
-        return group
         
 
     def get_key_test_symbol(self, cfg):
@@ -1156,8 +1141,10 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         return group
 
     def init_weight(self, cfg, arg_params, aux_params):
-        # arg_params['Convolution5_scale_weight'] = mx.nd.zeros(shape=self.arg_shape_dict['Convolution5_scale_weight'])
-        # arg_params['Convolution5_scale_bias'] = mx.nd.ones(shape=self.arg_shape_dict['Convolution5_scale_bias'])
+        
+        #FlowNet
+        arg_params['Convolution5_scale_weight'] = mx.nd.zeros(shape=self.arg_shape_dict['Convolution5_scale_weight'])
+        arg_params['Convolution5_scale_bias'] = mx.nd.ones(shape=self.arg_shape_dict['Convolution5_scale_bias'])
 
         # CAM Params
 

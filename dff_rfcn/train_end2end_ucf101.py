@@ -89,7 +89,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
                         config.dataset.traintestlist_path, split=split, flip=config.TRAIN.FLIP)
 
     # load training data
-    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=128, shuffle=True, ctx=ctx, aspect_grouping=True)
+    train_data = TrainLoader(feat_sym, gtdb, config, batch_size=64, shuffle=True, ctx=ctx, aspect_grouping=True)
 
     data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
     pprint.pprint(data_shape_dict)
@@ -125,7 +125,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     # decide training params
     # metric
     eval_metrics = mx.metric.CompositeEvalMetric()
-    loss_metric = mx.metric.Loss()
+    loss_metric = mx.metric.CrossEntropy()
     accuracy = mx.metric.Accuracy()
     for evl in [loss_metric,accuracy]:
        eval_metrics.add(evl)
@@ -157,7 +157,7 @@ def train_net(args, ctx, pretrained, pretrained_flow, epoch, prefix, begin_epoch
     adam = mx.optimizer.create('adam', learning_rate=base_lr)
     mod.fit(train_data, eval_metric=eval_metrics, epoch_end_callback=epoch_end_callback,
             batch_end_callback=batch_end_callback, kvstore=config.default.kvstore,
-            optimizer=adam, optimizer_params=(('learning_rate', base_lr), ('lr_scheduler', lr_sch)), 
+            optimizer=adam, optimizer_params=(('learning_rate', base_lr),), 
             arg_params=arg_params, aux_params=aux_params, begin_epoch=begin_epoch, num_epoch=end_epoch)
 
 

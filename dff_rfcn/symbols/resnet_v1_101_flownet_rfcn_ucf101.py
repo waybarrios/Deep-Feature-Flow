@@ -757,36 +757,43 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         resnet_features = self.get_resnet_v1(data)
         return self.CAM(resnet_features, num_classes)
 
-    def get_flownet(self, img_cur, img_ref):
-        data = mx.symbol.Concat(img_cur / 255.0, img_ref / 255.0, dim=1)
+
+    def get_flownet(self, data):
         resize_data = mx.symbol.Pooling(name='resize_data', data=data, pooling_convention='full', pad=(0, 0),
-                                        kernel=(2, 2), stride=(2, 2), pool_type='avg')
+                                        kernel=(2, 2),
+                                        stride=(2, 2), pool_type='avg')
         flow_conv1 = mx.symbol.Convolution(name='flow_conv1', data=resize_data, num_filter=64, pad=(3, 3),
-                                           kernel=(7, 7), stride=(2, 2), no_bias=False)
+                                           kernel=(7, 7),
+                                           stride=(2, 2), no_bias=False)
         ReLU1 = mx.symbol.LeakyReLU(name='ReLU1', data=flow_conv1, act_type='leaky', slope=0.1)
         conv2 = mx.symbol.Convolution(name='conv2', data=ReLU1, num_filter=128, pad=(2, 2), kernel=(5, 5),
-                                      stride=(2, 2), no_bias=False)
+                                      stride=(2, 2),
+                                      no_bias=False)
         ReLU2 = mx.symbol.LeakyReLU(name='ReLU2', data=conv2, act_type='leaky', slope=0.1)
         conv3 = mx.symbol.Convolution(name='conv3', data=ReLU2, num_filter=256, pad=(2, 2), kernel=(5, 5),
-                                      stride=(2, 2), no_bias=False)
+                                      stride=(2, 2),
+                                      no_bias=False)
         ReLU3 = mx.symbol.LeakyReLU(name='ReLU3', data=conv3, act_type='leaky', slope=0.1)
         conv3_1 = mx.symbol.Convolution(name='conv3_1', data=ReLU3, num_filter=256, pad=(1, 1), kernel=(3, 3),
                                         stride=(1, 1), no_bias=False)
         ReLU4 = mx.symbol.LeakyReLU(name='ReLU4', data=conv3_1, act_type='leaky', slope=0.1)
         conv4 = mx.symbol.Convolution(name='conv4', data=ReLU4, num_filter=512, pad=(1, 1), kernel=(3, 3),
-                                      stride=(2, 2), no_bias=False)
+                                      stride=(2, 2),
+                                      no_bias=False)
         ReLU5 = mx.symbol.LeakyReLU(name='ReLU5', data=conv4, act_type='leaky', slope=0.1)
         conv4_1 = mx.symbol.Convolution(name='conv4_1', data=ReLU5, num_filter=512, pad=(1, 1), kernel=(3, 3),
                                         stride=(1, 1), no_bias=False)
         ReLU6 = mx.symbol.LeakyReLU(name='ReLU6', data=conv4_1, act_type='leaky', slope=0.1)
         conv5 = mx.symbol.Convolution(name='conv5', data=ReLU6, num_filter=512, pad=(1, 1), kernel=(3, 3),
-                                      stride=(2, 2), no_bias=False)
+                                      stride=(2, 2),
+                                      no_bias=False)
         ReLU7 = mx.symbol.LeakyReLU(name='ReLU7', data=conv5, act_type='leaky', slope=0.1)
         conv5_1 = mx.symbol.Convolution(name='conv5_1', data=ReLU7, num_filter=512, pad=(1, 1), kernel=(3, 3),
                                         stride=(1, 1), no_bias=False)
         ReLU8 = mx.symbol.LeakyReLU(name='ReLU8', data=conv5_1, act_type='leaky', slope=0.1)
         conv6 = mx.symbol.Convolution(name='conv6', data=ReLU8, num_filter=1024, pad=(1, 1), kernel=(3, 3),
-                                      stride=(2, 2), no_bias=False)
+                                      stride=(2, 2),
+                                      no_bias=False)
         ReLU9 = mx.symbol.LeakyReLU(name='ReLU9', data=conv6, act_type='leaky', slope=0.1)
         conv6_1 = mx.symbol.Convolution(name='conv6_1', data=ReLU9, num_filter=1024, pad=(1, 1), kernel=(3, 3),
                                         stride=(1, 1), no_bias=False)
@@ -798,7 +805,8 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         crop_deconv5 = mx.symbol.Crop(name='crop_deconv5', *[deconv5, ReLU8], offset=(1, 1))
         ReLU11 = mx.symbol.LeakyReLU(name='ReLU11', data=crop_deconv5, act_type='leaky', slope=0.1)
         upsample_flow6to5 = mx.symbol.Deconvolution(name='upsample_flow6to5', data=Convolution1, num_filter=2,
-                                                    pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False)
+                                                    pad=(0, 0),
+                                                    kernel=(4, 4), stride=(2, 2), no_bias=False)
         crop_upsampled_flow6_to_5 = mx.symbol.Crop(name='crop_upsampled_flow6_to_5', *[upsample_flow6to5, ReLU8],
                                                    offset=(1, 1))
         Concat2 = mx.symbol.Concat(name='Concat2', *[ReLU8, ReLU11, crop_upsampled_flow6_to_5])
@@ -809,7 +817,8 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         crop_deconv4 = mx.symbol.Crop(name='crop_deconv4', *[deconv4, ReLU6], offset=(1, 1))
         ReLU12 = mx.symbol.LeakyReLU(name='ReLU12', data=crop_deconv4, act_type='leaky', slope=0.1)
         upsample_flow5to4 = mx.symbol.Deconvolution(name='upsample_flow5to4', data=Convolution2, num_filter=2,
-                                                    pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False)
+                                                    pad=(0, 0),
+                                                    kernel=(4, 4), stride=(2, 2), no_bias=False)
         crop_upsampled_flow5_to_4 = mx.symbol.Crop(name='crop_upsampled_flow5_to_4', *[upsample_flow5to4, ReLU6],
                                                    offset=(1, 1))
         Concat3 = mx.symbol.Concat(name='Concat3', *[ReLU6, ReLU12, crop_upsampled_flow5_to_4])
@@ -820,7 +829,8 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         crop_deconv3 = mx.symbol.Crop(name='crop_deconv3', *[deconv3, ReLU4], offset=(1, 1))
         ReLU13 = mx.symbol.LeakyReLU(name='ReLU13', data=crop_deconv3, act_type='leaky', slope=0.1)
         upsample_flow4to3 = mx.symbol.Deconvolution(name='upsample_flow4to3', data=Convolution3, num_filter=2,
-                                                    pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False)
+                                                    pad=(0, 0),
+                                                    kernel=(4, 4), stride=(2, 2), no_bias=False)
         crop_upsampled_flow4_to_3 = mx.symbol.Crop(name='crop_upsampled_flow4_to_3', *[upsample_flow4to3, ReLU4],
                                                    offset=(1, 1))
         Concat4 = mx.symbol.Concat(name='Concat4', *[ReLU4, ReLU13, crop_upsampled_flow4_to_3])
@@ -831,7 +841,8 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         crop_deconv2 = mx.symbol.Crop(name='crop_deconv2', *[deconv2, ReLU2], offset=(1, 1))
         ReLU14 = mx.symbol.LeakyReLU(name='ReLU14', data=crop_deconv2, act_type='leaky', slope=0.1)
         upsample_flow3to2 = mx.symbol.Deconvolution(name='upsample_flow3to2', data=Convolution4, num_filter=2,
-                                                    pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False)
+                                                    pad=(0, 0),
+                                                    kernel=(4, 4), stride=(2, 2), no_bias=False)
         crop_upsampled_flow3_to_2 = mx.symbol.Crop(name='crop_upsampled_flow3_to_2', *[upsample_flow3to2, ReLU2],
                                                    offset=(1, 1))
         Concat5 = mx.symbol.Concat(name='Concat5', *[ReLU2, ReLU14, crop_upsampled_flow3_to_2])
@@ -840,23 +851,39 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         Convolution5 = mx.symbol.Convolution(name='Convolution5', data=Concat5, num_filter=2, pad=(1, 1), kernel=(3, 3),
                                              stride=(1, 1), no_bias=False)
 
-        Convolution5_scale_bias = mx.sym.Variable(name='Convolution5_scale_bias', lr_mult=0.0)
-        Convolution5_scale = mx.symbol.Convolution(name='Convolution5_scale', data=Concat5, num_filter=1024, pad=(0, 0),
-                                                   kernel=(1, 1), stride=(1, 1),
-                                                   bias=Convolution5_scale_bias, no_bias=False)
-        return Convolution5 * 2.5, Convolution5_scale
+        return Convolution5 * 2.5
 
     def get_train_symbol(self, cfg):
 
         # config alias for convenient
         num_classes = cfg.dataset.NUM_CLASSES  # need to change to UCF 101
         num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
+        #data
         data = mx.sym.Variable(name="data")
+
+        #From FGFA 
+        data_bef = mx.sym.Variable(name="data_bef")
+        data_aft = mx.sym.Variable(name="data_aft")
+
         im_info = mx.sym.Variable(name="im_info")
         labels = mx.sym.Variable(name='label')
 
+        #TODO:
+        #Concatenate previous and after info as FGFA
+        #Do we need to do that? If so, uncomment the following lines and remove line 878:
+
+        #concat_data = mx.symbol.Concat(*[data, data_bef, data_aft], dim=0)
+        #cam_resnet = self.resnet101_cam(concat_data, num_classes)
+
         cam_resnet = self.resnet101_cam(data, num_classes)
 
+        # pass through FlowNet
+        concat_flow_data_1 = mx.symbol.Concat(data / 255.0, data_bef / 255.0, dim=1)
+        concat_flow_data_2 = mx.symbol.Concat(data / 255.0, data_aft / 255.0, dim=1)
+        concat_flow_data = mx.symbol.Concat(concat_flow_data_1, concat_flow_data_2, dim=0)
+        flow = self.get_flownet(concat_flow_data)
+
+        fusion = mx.symbol.Concat(cam_resnet,concat_flow_data, dim=0)
 
         #clasification 
         cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')

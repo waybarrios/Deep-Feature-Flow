@@ -874,8 +874,13 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
 
         #concat_data = mx.symbol.Concat(*[data, data_bef, data_aft], dim=0)
         #cam_resnet = self.resnet101_cam(concat_data, num_classes)
-
+        #concat_data = mx.symbol.Concat(*[data, data_bef, data_aft], dim=0)
+        #conv_feat = self.get_resnet_v1(concat_data)
+        
+        #heat_map
         cam_resnet = self.resnet101_cam(data, num_classes)
+        #features
+        conv_feat = self.get_resnet_v1(data)
 
         # pass through FlowNet
         concat_flow_data_1 = mx.symbol.Concat(data / 255.0, data_bef / 255.0, dim=1)
@@ -883,7 +888,22 @@ class resnet_v1_101_flownet_rfcn_ucf101(Symbol):
         concat_flow_data = mx.symbol.Concat(concat_flow_data_1, concat_flow_data_2, dim=0)
         flow = self.get_flownet(concat_flow_data)
 
+        #Fusion Heatmap and FLow 
         fusion = mx.symbol.Concat(cam_resnet,concat_flow_data, dim=0)
+
+        fusion_conv_1x1= mx.sym.Convolution(
+            data=fusion, kernel=(1, 1), pad=(0, 0), num_filter=1024, name="fusion_conv_1x1")
+ 
+        fusion_slide = mx.sym.SliceChannel(fusion_conv_1x1, axis=0, num_outputs=2)
+        conv_feat = mx.sym.SliceChannel(conv_feat, axis=0, num_outputs=3)
+
+        #Warping
+        low_grid_1 = mx.sym.GridGenerator(data=fusion_slide[0], transform_type='warp', name='flow_grid_1')
+        flow_grid_2 = mx.sym.GridGenerator(data=fusion_slide[1], transform_type='warp', name='flow_grid_2')
+        warp_conv_feat_1 = mx.sym.BilinearSampler(data=conv_feat[1], grid=flow_grid_1, name='warping_feat_1')
+        warp_conv_feat_2 = mx.sym.BilinearSampler(data=conv_feat[2], grid=flow_grid_2, name='warping_feat_2')
+
+
 
         #clasification 
         cam_softmax = mx.sym.SoftmaxOutput(data=cam_resnet, label=labels, name='cam_softmax')

@@ -563,8 +563,7 @@ class Module(BaseModule):
         if self._update_on_kvstore:
             _update_params_on_kvstore(self._exec_group.param_arrays,
                                       self._exec_group.grad_arrays,
-                                      self._kvstore,
-                                      self._param_names)
+                                      self._kvstore)
         else:
             _update_params(self._exec_group.param_arrays,
                            self._exec_group.grad_arrays,
@@ -945,10 +944,15 @@ class MutableModule(BaseModule):
             for nbatch, data_batch in enumerate(train_data):
                 if monitor is not None:
                     monitor.tic()
+                tmp_label = data_batch.label[0][0].asnumpy()
+                print ("Batch:{0}   Epoch:{1}  ".format(nbatch,epoch))
+                print("label max = {0}, min = {1}".format(tmp_label.max(), tmp_label.min()))
                 self.forward_backward(data_batch)
                 self.update()
                 self.update_metric(eval_metric, data_batch.label)
-
+                
+                print(eval_metric)
+              
                 if monitor is not None:
                     monitor.toc_print()
 

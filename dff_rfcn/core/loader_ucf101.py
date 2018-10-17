@@ -22,8 +22,8 @@ import random
 
 from config.config import config
 from utils.image import tensor_vstack, resize
-from rpn.rpn import get_rpn_testbatch, get_rpn_pair_batch, assign_anchor
-from rcnn import get_rcnn_testbatch, get_rcnn_batch
+#from rpn.rpn import get_rpn_testbatch, get_rpn_pair_batch, assign_anchor
+#from rcnn import get_rcnn_testbatch, get_rcnn_batch
 
 """
 class TestLoader(mx.io.DataIter):
@@ -323,8 +323,7 @@ class TrainLoader(mx.io.DataIter):
             im, im_scale = resize(im, target_size, max_size, stride=config.network.IMAGE_STRIDE)
             im_tensor = self.transform(im, config.network.PIXEL_MEANS)
             processed_ims.append(im_tensor)
-
-            processed_labels.append(roi_rec['label'])
+            processed_labels.append(str(int(roi_rec['label'])-1))
 
             im_info = [im_tensor.shape[1], im_tensor.shape[2], im_scale]
             new_rec['im_info'] = im_info
